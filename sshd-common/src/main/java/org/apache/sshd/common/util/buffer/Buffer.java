@@ -366,12 +366,12 @@ public abstract class Buffer implements Readable {
 
         if (available() > 0) {
             // pull out entire Certificate Options section
-            final ByteArrayBuffer optionBuffer = new ByteArrayBuffer(getBytes());
+            Buffer optionBuffer = new ByteArrayBuffer(getBytes());
 
             while (optionBuffer.available() > 0) {
                 String name = optionBuffer.getString(charset);
                 String data = null;
-                final ByteArrayBuffer dataBuffer = new ByteArrayBuffer(optionBuffer.getBytes());
+                Buffer dataBuffer = new ByteArrayBuffer(optionBuffer.getBytes());
                 if (dataBuffer.available() > 0) {
                     data = GenericUtils.trimToEmpty(dataBuffer.getString(charset));
                     data = data.length() > 0 ? data : null;

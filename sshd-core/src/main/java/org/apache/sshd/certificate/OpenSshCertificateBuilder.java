@@ -66,7 +66,7 @@ public class OpenSshCertificateBuilder {
     protected long serial;
     protected String id;
     protected Collection<String> principals;
-    // Critical Options must be lexically ordered by "name" if they appear in the
+    // criticalOptions and extensions must be lexically ordered by "name" if they appear in the
     // sequence. Each named option may only appear once in a certificate.
     protected List<OpenSshCertificate.CertificateOption> criticalOptions;
     protected List<OpenSshCertificate.CertificateOption> extensions;
@@ -110,26 +110,14 @@ public class OpenSshCertificateBuilder {
     }
 
     public OpenSshCertificateBuilder criticalOptions(List<OpenSshCertificate.CertificateOption> criticalOptions) {
-        if (criticalOptions != null && !criticalOptions.isEmpty()) {
-            // check if any duplicates
-            Set<String> names = new HashSet<String>();
-            Set<String> duplicates = criticalOptions.stream().filter(option -> !names.add(option.getName()))
-                    .map(option -> option.getName())
-                    .collect(Collectors.toSet());
-            if (!duplicates.isEmpty()) {
-                throw new IllegalArgumentException("Duplicate critical option: " + String.join(",", duplicates));
-            }
-            // lexically order by "name"
-            List<OpenSshCertificate.CertificateOption> sortedCriticalOptions = criticalOptions.stream()
-                    .sorted(Comparator.comparing(OpenSshCertificate.CertificateOption::getName))
-                    .collect(Collectors.toList());
-            this.criticalOptions = sortedCriticalOptions;
-        }
+        validateOptions(criticalOptions);
+        this.criticalOptions = lexicallyOrderOptions(criticalOptions);
         return this;
     }
 
     public OpenSshCertificateBuilder extensions(List<OpenSshCertificate.CertificateOption> extensions) {
-        this.extensions = extensions;
+        validateOptions(extensions);
+        this.extensions = lexicallyOrderOptions(extensions);
         return this;
     }
 
@@ -286,5 +274,39 @@ public class OpenSshCertificateBuilder {
         cert.setSignature(tmpBuffer.getCompactData());
 
         return cert;
+    }
+
+    /**
+     * Validate if certificate options are correct
+     *
+     * @param options Options
+     */
+    private void validateOptions(List<OpenSshCertificate.CertificateOption> options) {
+        if (options != null && !options.isEmpty()) {
+            // check if any duplicates
+            Set<String> names = new HashSet<>();
+            Set<String> duplicates = options.stream().filter(option -> !names.add(option.getName()))
+                    .map(option -> option.getName())
+                    .collect(Collectors.toSet());
+            if (!duplicates.isEmpty()) {
+                throw new IllegalArgumentException("Duplicate option: " + String.join(",", duplicates));
+            }
+        }
+    }
+
+    /**
+     * Lexically order certificate options by "name"
+     *
+     * @param  options Options
+     * @return         Lexically ordered options
+     */
+    private List<OpenSshCertificate.CertificateOption> lexicallyOrderOptions(
+            List<OpenSshCertificate.CertificateOption> options) {
+        if (options != null && !options.isEmpty()) {
+            return options.stream()
+                    .sorted(Comparator.comparing(OpenSshCertificate.CertificateOption::getName))
+                    .collect(Collectors.toList());
+        }
+        return options;
     }
 }
